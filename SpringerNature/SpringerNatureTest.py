@@ -5,7 +5,7 @@ import requests
 # if the same topic is searched, there will be repeats
 abstracts = open("SpringerNature/springerNatureAbstracts.txt", "w")
 
-
+ 
 def extractAbstracts(numOfJournals, searchTopic):
     tempJournals = int(numOfJournals)
     offset = 1
