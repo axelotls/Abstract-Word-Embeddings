@@ -39,7 +39,8 @@ def extractAbstracts(numOfJournals, searchTopic):
                 ceiling = tempJournals
 
 def urlRequest(offset, ceiling):
-        url = requests.get("https://api.springernature.com/meta/v2/json?api_key=50fa5bb93bb66d04245858c6490c3293&q=" + searchTopic + "&s=" + str(offset) + "&p=" + str(numOfJournals))
+        url = requests.get("https://api.springernature.com/meta/v2/json?api_key=50fa5bb93bb66d04245858c6490c3293&q=" + 
+        searchTopic + "&s=" + str(offset) + "&p=" + str(numOfJournals))
         return json.loads(url.text)
 
 userInput = ""
