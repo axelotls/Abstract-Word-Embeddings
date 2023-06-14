@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import simpledialog
 from tkinter import messagebox
 
+## August Moses VCU 2023
+
 abstracts = open("Abstracts.txt", "w", encoding="utf-8")
 
 def main():
@@ -25,7 +27,6 @@ def main():
 
         except IndexError as e:
             print("\n[Out of Springer Nature Journals.]")
-
         
         try:
             ElsevierExtraction(numOfJournals, searchTopic)
