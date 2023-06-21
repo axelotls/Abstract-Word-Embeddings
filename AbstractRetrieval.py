@@ -3,51 +3,50 @@ import requests
 import time
 import tkinter as tk
 from tkinter import simpledialog
-from tkinter import messagebox
+import subprocess
 
-## August Moses VCU 2023
-
+## August Moses VCU 2023 
+# pyinstaller --onefile -w 'AbstractRetrieval.py'
 abstracts = open("Abstracts.txt", "w", encoding="utf-8")
 
 def main():
+    count = 0
     # for example sake, abstracts.txt is cleared every time the code runs
-    # if the same topic is searched, there will be repeats
     while True:
-        searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a topic to search for: \n\n" + 
-        "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic (equal to lesion-pancreatic and lesion pancreatic)\nkidney OR renal\nganglia OR tumor AND NOT malignan\n", parent=root)
-        numOfJournals = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a number of journals: \n\n\t\t (Enter Max for maximum journal retrieval)", parent=root)
+        searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
+        "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", parent=root)
+        numOfJournals = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
+
         if numOfJournals == "max":
-            numOfJournals = "10000"
-        
+            numOfJournals = "100000"
+
+        try:
+            ElsevierExtraction(numOfJournals, searchTopic)
+            
+        except IndexError as e:
+            print("\n[Out of Elsevier Journals.]")
+
         try:
             SpringerExtraction(numOfJournals, searchTopic)
 
         except IndexError as e:
             print("\n[Out of Springer Nature Journals.]")
-
-        except IndexError as e:
-            print("\n[Out of Springer Nature Journals.]")
-        
-        try:
-            ElsevierExtraction(numOfJournals, searchTopic)
-        except IndexError as e:
-            print("\n[Out of Elsevier Journals.]")
-
-        except KeyError() as e:
-            print("\n[Out of Elsevier Journals.]")  # KeyError happens when there is also no more indices left.
-
+            
         print("\n[Abstract Retrieval: Done.]")
+        subprocess.run(['open', 'Abstracts.txt'], check=True)
     abstracts.close
     quit()
 
 
 def SpringerJSON(offset, ceiling, searchTopic, numOfJournals):
-        # https://dev.springernature.com/adding-constraints
-        #KeyWord search: limit to articles tagged with a keyword
-        # subject: 	limit to the specified subject collection
-        url = requests.get("http://api.springernature.com/meta/v2/json?q=language:en+keyword:" + searchTopic + "&s=" + 
-        str(offset)+ "&p=" + str(ceiling) + "&api_key=50fa5bb93bb66d04245858c6490c3293")
-        return json.loads(url.text)
+    # https://dev.springernature.com/adding-constraints
+    #KeyWord search: limit to articles tagged with a keyword
+    # subject: 	limit to the specified subject collection
+    if "(" in searchTopic:
+        searchTopic.replace("(", "").replace(")", "")
+    url = requests.get("http://api.springernature.com/meta/v2/json?q=language:en+keyword:" + searchTopic + "&s=" + 
+    str(offset)+ "&p=" + str(ceiling) + "&api_key=50fa5bb93bb66d04245858c6490c3293")
+    return json.loads(url.text)
         
 def ElsevierJSON(offset, ceiling, searchTopic, numOfJournals):
     # https://dev.elsevier.com/sd_article_meta_tips.html
@@ -64,23 +63,13 @@ def ElsevierExtraction(numOfJournals, searchTopic):
     if (201 > tempJournals > 0):
         ceiling = tempJournals
         data = ElsevierJSON(offset, ceiling, searchTopic, numOfJournals)
-        for i in range(tempJournals):
-            if data['search-results']['entry'][i]['dc:description'] == None:
-                break
-            else:
-                abstract = data['search-results']['entry'][i]['dc:description'] + "\n"  # \n isn't required
-                abstracts.write(str(abstract).replace("Background", ""))
+        ElsevierParser(ceiling, data)
+
     else:
         ceiling = 200
         while (tempJournals > 0):
             data = ElsevierJSON(offset, ceiling, searchTopic, numOfJournals)
-            for i in range(ceiling):
-                if data['search-results']['entry'][i]['dc:description'] == None:
-                    break
-                else:
-                    abstract = data['search-results']['entry'][i]['dc:description'] + "\n"  # \n isn't required
-                    abstracts.write(str(abstract).replace("Background", ""))
-
+            ElsevierParser(ceiling, data)
             offset += 200
             tempJournals -= 200
 
@@ -88,30 +77,29 @@ def ElsevierExtraction(numOfJournals, searchTopic):
                 ceiling = 200
             else:
                 ceiling = tempJournals
-            
-            time.sleep(5)
+
+def ElsevierParser(ceiling, data):
+    for i in range(ceiling):
+        if data['search-results']['entry'][i]['dc:description'] == None:
+            break
+        else:
+            abstract = data['search-results']['entry'][i]['dc:description'] + "\n"
+            abstracts.write(str(abstract).replace("Background", ""))
 
 def SpringerExtraction(numOfJournals, searchTopic):
     tempJournals = int(numOfJournals)
     offset = 1
 
     if (100 > tempJournals > 0):
-        ceiling = tempJournals
+        ceiling = tempJournalsenglish
         data = SpringerJSON(offset, ceiling, searchTopic, numOfJournals)
-        for i in range(0, tempJournals):
-            if data['records'][i]['abstract'] != "":
-                abstract = data['records'][i]['abstract'] + "\n"  # \n isn't required
-                abstracts.write(str(abstract).replace("Background", ""))
+        SpringerParser(ceiling, data)
 
     else:
         ceiling = 100
         while (tempJournals > 0):
             data = SpringerJSON(offset, ceiling, searchTopic, numOfJournals)
-            for i in range(ceiling):
-                i %= 100
-                if data['records'][i]['abstract'] != "":
-                    abstract = data['records'][i]['abstract'] + "\n"  # \n isn't required
-                    abstracts.write(str(abstract).replace("Background", ""))
+            SpringerParser(ceiling, data)
 
             offset += 100
             tempJournals -= 100
@@ -120,8 +108,21 @@ def SpringerExtraction(numOfJournals, searchTopic):
                 ceiling = 100
             else:
                 ceiling = tempJournals
-            
-            time.sleep(5)
+                        
+def SpringerParser(ceiling, data):
+    for i in range(ceiling):
+        i %= 100
+        if data['records'][i]['abstract'] != "" and data['records'][i]['abstract'] != None:
+            abstract = data['records'][i]['abstract'] + "\n"  # \n isn't required
+            abstracts.write(str(abstract).replace("Background", ""))
+
+def counter(count):
+    r_abstracts = open("Abstracts.txt", "r")
+    for line in r_abstracts:
+        count += 1
+    r_abstracts.close()
+    return count
+
 
 root = tk.Tk()
 root.geometry('0x0+1000+400')
