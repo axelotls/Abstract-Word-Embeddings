@@ -16,6 +16,7 @@ def main():
         searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
         "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", parent=root)
         numOfJournals = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
+
         if numOfJournals == "max":
             numOfJournals = "100000"
 
@@ -127,7 +128,6 @@ def counter(count):
 
 root = tk.Tk()
 root.geometry('0x0+1000+400')
-
 root.update_idletasks()
 main()
 #root.withdraw()
