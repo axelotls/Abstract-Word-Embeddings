@@ -16,22 +16,21 @@ def main():
         searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
         "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", parent=root)
         numOfJournals = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
-
         if numOfJournals == "max":
             numOfJournals = "100000"
 
         try:
             ElsevierExtraction(numOfJournals, searchTopic)
             
-        except IndexError as e:
+        except (IndexError, KeyError) as error:
             print("\n[Out of Elsevier Journals.]")
 
         try:
             SpringerExtraction(numOfJournals, searchTopic)
 
-        except IndexError as e:
+        except (IndexError, KeyError) as error:
             print("\n[Out of Springer Nature Journals.]")
-            
+
         print("\n[Abstract Retrieval: Done.]")
         subprocess.run(['open', 'Abstracts.txt'], check=True)
     abstracts.close
@@ -91,7 +90,7 @@ def SpringerExtraction(numOfJournals, searchTopic):
     offset = 1
 
     if (100 > tempJournals > 0):
-        ceiling = tempJournalsenglish
+        ceiling = tempJournals
         data = SpringerJSON(offset, ceiling, searchTopic, numOfJournals)
         SpringerParser(ceiling, data)
 
@@ -112,7 +111,9 @@ def SpringerExtraction(numOfJournals, searchTopic):
 def SpringerParser(ceiling, data):
     for i in range(ceiling):
         i %= 100
-        if data['records'][i]['abstract'] != "" and data['records'][i]['abstract'] != None:
+        if data['records'][i]['abstract'] == "" or data['records'][i]['abstract'] == None:
+            break
+        else:
             abstract = data['records'][i]['abstract'] + "\n"  # \n isn't required
             abstracts.write(str(abstract).replace("Background", ""))
 
