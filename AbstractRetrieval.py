@@ -2,20 +2,23 @@ import json
 import requests
 import time
 import tkinter as tk
+from tkinter import *
 from tkinter import simpledialog
 import subprocess
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
 abstracts = open("Abstracts.txt", "w", encoding="utf-8")
-
 def main():
     count = 0
     # for example sake, abstracts.txt is cleared every time the code runs
     while True:
-        searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
-        "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", parent=root)
-        numOfJournals = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
+        searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + 
+        str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
+        "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", 
+        parent=root)
+        numOfJournals = simpledialog.askstring(title="Abstract Retrieval", 
+        prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
 
         if numOfJournals == "max":
             numOfJournals = "100000"
@@ -23,7 +26,7 @@ def main():
         try:
             ElsevierExtraction(numOfJournals, searchTopic)
             
-        except (IndexError, KeyError) as error:
+        except (IndexError) as error:
             print("\n[Out of Elsevier Journals.]")
 
         try:
@@ -115,7 +118,7 @@ def SpringerParser(ceiling, data):
         if data['records'][i]['abstract'] == "" or data['records'][i]['abstract'] == None:
             break
         else:
-            abstract = data['records'][i]['abstract'] + "\n"  # \n isn't required
+            abstract = data['records'][i]['abstract'] + "\n"
             abstracts.write(str(abstract).replace("Background", ""))
 
 def counter(count):
