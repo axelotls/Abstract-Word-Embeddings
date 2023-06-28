@@ -1,47 +1,53 @@
 import json
 import requests
-import time
-import tkinter as tk
 from tkinter import *
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
 from tkinter import simpledialog
-import subprocess
+import re
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
 abstracts = open("Abstracts.txt", "w", encoding="utf-8")
-def main():
+def __main__():
     count = 0
+
     # for example sake, abstracts.txt is cleared every time the code runs
     while True:
-        searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current number of abstracts: " + 
-        str(counter(count)) +"\n\nEnter a topic to search for: \n\n" + 
-        "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", 
-        parent=root)
-        numOfJournals = simpledialog.askstring(title="Abstract Retrieval", 
-        prompt="Enter a number of journals: \n\n(Enter 'max' for maximum journal retrieval)", parent=root)
-
-        if numOfJournals == "max":
-            numOfJournals = "100000"
-
         try:
-            ElsevierExtraction(numOfJournals, searchTopic)
-            
-        except (IndexError) as error:
-            print("\n[Out of Elsevier Journals.]")
+            searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a topic to search for: \n\n" + 
+            "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", 
+            parent=root)
+            numOfJournals = simpledialog.askstring(title="Abstract Retrieval", 
+            prompt="Enter a number of journals:", parent=root)
 
-        try:
-            SpringerExtraction(numOfJournals, searchTopic)
+            try:
+                abstracts = open("Abstracts.txt", "a")
+                RESTAPIExtraction(numOfJournals, searchTopic)
+                ElsevierExtraction(numOfJournals, searchTopic)
+                SpringerExtraction(numOfJournals, searchTopic)
 
-        except (IndexError, KeyError) as error:
-            print("\n[Out of Springer Nature Journals.]")
+            except (IndexError) as error:
+                print("\n[Out of Journals.]")
+            print("\n[Abstract Retrieval: Done.]")
 
-        print("\n[Abstract Retrieval: Done.]")
-        subprocess.run(['open', 'Abstracts.txt'], check=True)
-    abstracts.close
-    quit()
+        except (TypeError) as error:
+            root.destroy()
+            win= Tk()
+            win.geometry("1000x900")
+            win.title("Abstracts.txt")
+            size= 10
+            text= ScrolledText(win, width=100, height= 100)
+            file = open('Abstracts.txt')
+            data = file.read()
+            text.insert(END, data)
+            text.pack(fill= BOTH, side= LEFT, expand= True)
+            abstracts.close
+            break
+    
 
 
-def SpringerJSON(offset, ceiling, searchTopic, numOfJournals):
+def SpringerJSON(offset, ceiling, searchTopic):
     # https://dev.springernature.com/adding-constraints
     #KeyWord search: limit to articles tagged with a keyword
     # subject: 	limit to the specified subject collection
@@ -51,13 +57,17 @@ def SpringerJSON(offset, ceiling, searchTopic, numOfJournals):
     str(offset)+ "&p=" + str(ceiling) + "&api_key=50fa5bb93bb66d04245858c6490c3293")
     return json.loads(url.text)
         
-def ElsevierJSON(offset, ceiling, searchTopic, numOfJournals):
+def ElsevierJSON(offset, ceiling, searchTopic):
     # https://dev.elsevier.com/sd_article_meta_tips.html
     url = requests.get("https://api.elsevier.com/content/metadata/article?query="
     + "keywords(" + searchTopic + ")" + "&view=COMPLETE&" + "&start=" + str(offset) + "&count=" + str(ceiling) + "&" + 
     "httpAccept=application/json&apiKey=dc1c396604f71b360feeecd6f767e1d4")
     return json.loads(url.text)
 
+def RESTAPIJSON(offset, ceiling, searchTopic):
+    url = requests.get("https://api.crossref.org/works?query= " + searchTopic 
+    + " &rows=" + str(ceiling) + "&offset=" + str(offset) + "&filter=has-abstract:true&mailto=mosesa3@vcu.edu")
+    return json.loads(url.text)
 
 def ElsevierExtraction(numOfJournals, searchTopic):
     tempJournals = int(numOfJournals)
@@ -65,13 +75,13 @@ def ElsevierExtraction(numOfJournals, searchTopic):
 
     if (201 > tempJournals > 0):
         ceiling = tempJournals
-        data = ElsevierJSON(offset, ceiling, searchTopic, numOfJournals)
+        data = ElsevierJSON(offset, ceiling, searchTopic)
         ElsevierParser(ceiling, data)
 
     else:
         ceiling = 200
         while (tempJournals > 0):
-            data = ElsevierJSON(offset, ceiling, searchTopic, numOfJournals)
+            data = ElsevierJSON(offset, ceiling, searchTopic)
             ElsevierParser(ceiling, data)
             offset += 200
             tempJournals -= 200
@@ -95,13 +105,13 @@ def SpringerExtraction(numOfJournals, searchTopic):
 
     if (100 > tempJournals > 0):
         ceiling = tempJournals
-        data = SpringerJSON(offset, ceiling, searchTopic, numOfJournals)
+        data = SpringerJSON(offset, ceiling, searchTopic)
         SpringerParser(ceiling, data)
 
     else:
         ceiling = 100
         while (tempJournals > 0):
-            data = SpringerJSON(offset, ceiling, searchTopic, numOfJournals)
+            data = SpringerJSON(offset, ceiling, searchTopic)
             SpringerParser(ceiling, data)
 
             offset += 100
@@ -121,6 +131,38 @@ def SpringerParser(ceiling, data):
             abstract = data['records'][i]['abstract'] + "\n"
             abstracts.write(str(abstract).replace("Background", ""))
 
+def RESTAPIExtraction(numOfJournals, searchTopic):
+    tempJournals = int(numOfJournals)
+    offset = 1
+
+    if (tempJournals < 1001):
+        ceiling = tempJournals
+        data = RESTAPIJSON(offset, ceiling, searchTopic)
+        RESTAPIparser(ceiling, data)
+
+    else:
+        ceiling = 1000
+        while (tempJournals > 0):
+            data = RESTAPIJSON(offset, ceiling, searchTopic)
+            RESTAPIparser(ceiling, data)
+
+            offset += 1000
+            tempJournals -= 1000
+
+            if (tempJournals > 1000):
+                ceiling = 1000
+            else:
+                ceiling = tempJournals
+
+def RESTAPIparser(ceiling, data):
+    for i in range(ceiling):
+        abstract = data['message']['items'][i]['abstract']
+        abstract = re.sub("<\S+>", "", abstract)
+        abstract = re.sub("[a-z]*&\S*;", "", abstract)
+        abstract = re.sub("\s{2,}", "", abstract)
+        abstracts.write(abstract)
+
+
 def counter(count):
     r_abstracts = open("Abstracts.txt", "r")
     for line in r_abstracts:
@@ -132,6 +174,6 @@ def counter(count):
 root = tk.Tk()
 root.geometry('0x0+1000+400')
 root.update_idletasks()
-main()
+__main__()
 #root.withdraw()
 root.mainloop()
