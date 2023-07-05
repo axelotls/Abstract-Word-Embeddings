@@ -8,7 +8,7 @@ import re
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
-abstracts = open("Abstracts.txt", "w", encoding="utf-8")
+abstracts = open("AbstractRetrieval/Abstracts.txt", "w", encoding="utf-8")
 def __main__():
     count = 0
 
