@@ -5,31 +5,41 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from tkinter import simpledialog
 import re
+import os
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
-abstracts = open("AbstractRetrieval/Abstracts.txt", "w", encoding="utf-8")
+abstracts = open("Abstracts.txt", "w", encoding="utf-8")
 def __main__():
     count = 0
-
     # for example sake, abstracts.txt is cleared every time the code runs
     while True:
         try:
-            searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Enter a topic to search for: \n\n" + 
+            count = counter(count)
+            searchTopic = simpledialog.askstring(title="Abstract Retrieval", prompt="Current lines of abstracts: " + str(counter(count)) + "\nEnter a topic to search for: \n\n" + 
             "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration", 
             parent=root)
             numOfJournals = simpledialog.askstring(title="Abstract Retrieval", 
             prompt="Enter a number of journals:", parent=root)
+            abstracts = open("Abstracts.txt", "a")
+            
+            try:
+                RESTAPIExtraction(numOfJournals, searchTopic)
+            except (IndexError, KeyError) as error:
+                continue
 
             try:
-                abstracts = open("Abstracts.txt", "a")
-                RESTAPIExtraction(numOfJournals, searchTopic)
-                ElsevierExtraction(numOfJournals, searchTopic)
                 SpringerExtraction(numOfJournals, searchTopic)
+            except (IndexError, KeyError) as error:
+                continue         
 
-            except (IndexError) as error:
-                print("\n[Out of Journals.]")
-            print("\n[Abstract Retrieval: Done.]")
+            try:
+                ElsevierExtraction(numOfJournals, searchTopic)
+            except (IndexError, KeyError) as error:
+                continue
+
+            abstracts.close()
+
 
         except (TypeError) as error:
             root.destroy()
