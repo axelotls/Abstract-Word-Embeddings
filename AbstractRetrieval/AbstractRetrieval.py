@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from tkinter import simpledialog
 import re
-import os
+import subprocess
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
@@ -42,16 +42,7 @@ def __main__():
 
 
         except (TypeError) as error:
-            root.destroy()
-            win= Tk()
-            win.geometry("1000x900")
-            win.title("Abstracts.txt")
-            size= 10
-            text= ScrolledText(win, width=100, height= 100)
-            file = open('Abstracts.txt')
-            data = file.read()
-            text.insert(END, data)
-            text.pack(fill= BOTH, side= LEFT, expand= True)
+            subprocess.run(['open', 'Abstracts.txt'], check=True)
             abstracts.close
             break
     
