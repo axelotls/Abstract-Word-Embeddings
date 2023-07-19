@@ -9,7 +9,7 @@ import subprocess
 
 ## August Moses VCU 2023 
 # pyinstaller --onefile -w 'AbstractRetrieval.py'
-abstracts = open("Abstracts.txt", "w", encoding="utf-8")
+abstracts = open("Abstracts.txt", "a", encoding="utf-8")
 def __main__():
     count = 0
     # for example sake, abstracts.txt is cleared every time the code runs
@@ -42,7 +42,6 @@ def __main__():
 
 
         except (TypeError) as error:
-            subprocess.run(['open', 'Abstracts.txt'], check=True)
             abstracts.close
             break
     
