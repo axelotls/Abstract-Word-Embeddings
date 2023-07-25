@@ -160,7 +160,8 @@ def RESTAPIparser(ceiling, data):
         abstract = re.sub("<\S+>", "", abstract)
         abstract = re.sub("[a-z]*&\S*;", "", abstract)
         abstract = re.sub("\s{2,}", "", abstract)
-        abstracts.write(abstract)
+        abstract = re.sub("\n", " ", abstract)
+        abstracts.write(abstract + "\n")
 
 
 def counter(count):
