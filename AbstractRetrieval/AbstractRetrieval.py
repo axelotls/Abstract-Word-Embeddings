@@ -10,48 +10,48 @@ import time
 
 # August Moses VCU 2023
 abstracts = open("AbstractRetrieval\Abstracts.txt", "w", encoding="utf-8")
-log = open("AbstractRetrieval\log.txt", "w")
+# log = open("AbstractRetrieval\log.txt", "w")
 
 
 def __main__():
     global DOIs
     DOIs = []
-    # for example sake, abstracts.txt is cleared every time the code runs
-    while True:
-        try:
-            searchTopic = simpledialog.askstring(
-                title="Abstract Retrieval",
-                prompt="Current # of abstracts: "
-                + "\nEnter a topic to search for: \n\n"
-                + "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration",
-                parent=root,
-            )
-            numOfJournals = simpledialog.askstring(
-                title="Abstract Retrieval",
-                prompt="Enter a number of journals:",
-                parent=root,
-            )
+    # # for example sake, abstracts.txt is cleared every time the code runs
+    # while True:
+    #     try:
+    searchTopic = simpledialog.askstring(
+        title="Abstract Retrieval",
+        prompt="Current # of abstracts: "
+        + "\nEnter a topic to search for: \n\n"
+        + "To search for multiple topics,enter the query as such: \n\nlesion AND pancreatic\nkidney AND (tissue OR renal)\nganglia OR tumor AND NOT malignan\n\nNote: Springer Nature doesn't take parenthesis into consideration",
+        parent=root,
+    )
+    numOfJournals = simpledialog.askstring(
+        title="Abstract Retrieval",
+        prompt="Enter a number of journals:",
+        parent=root,
+    )
 
-            try:
-                RESTAPIExtraction(numOfJournals, searchTopic)
-            except (IndexError, KeyError) as error:
-                continue
+    try:
+        RESTAPIExtraction(numOfJournals, searchTopic)
+    except (IndexError, KeyError, TypeError) as error:
+        pass
+    try:
+        SpringerExtraction(numOfJournals, searchTopic)
+    except (IndexError, KeyError) as error:
+        pass
+    try:
+        ElsevierExtraction(numOfJournals, searchTopic)
+    except (IndexError, KeyError) as error:
+        pass
 
-            try:
-                SpringerExtraction(numOfJournals, searchTopic)
-            except (IndexError, KeyError) as error:
-                continue
+    doiWriter()
+    print(len(DOIs))
+    print("Done.")
+    abstracts.close()
 
-            try:
-                ElsevierExtraction(numOfJournals, searchTopic)
-            except (IndexError, KeyError) as error:
-                continue
-
-            abstracts.close()
-            log.close()
-
-        except TypeError as error:
-            exit()
+    # except TypeError as error:
+    #     exit()
 
 
 def SpringerJSON(offset, ceiling, searchTopic):
@@ -107,12 +107,12 @@ def ElsevierExtraction(numOfJournals, searchTopic):
     tempJournals = int(numOfJournals)
     offset = 0
 
-    if 201 > tempJournals > 0:
+    if 200 > tempJournals > 0:
         ceiling = tempJournals
         data = ElsevierJSON(offset, ceiling, searchTopic)
         ElsevierParser(ceiling, data)
 
-    else:
+    if tempJournals > 200:
         ceiling = 200
         while tempJournals > 0:
             data = ElsevierJSON(offset, ceiling, searchTopic)
@@ -129,12 +129,14 @@ def ElsevierExtraction(numOfJournals, searchTopic):
 
 def ElsevierParser(ceiling, data):
     for i in range(ceiling):
+        i %= 100
         if data["search-results"]["entry"][i]["dc:description"] == None:
             continue
         else:
-            doi = str(data["search-results"]["entry"][i]["dc:identifier"]).replace("DOI:", "")
+            doi = str(data["search-results"]["entry"][i]["dc:identifier"]).replace(
+                "DOI:", ""
+            )
             if DuplicateCheck(doi) == False:
-                doiWriter(doi)
                 abstract = (
                     str(data["search-results"]["entry"][i]["dc:description"]).replace(
                         "Background", ""
@@ -171,17 +173,19 @@ def SpringerExtraction(numOfJournals, searchTopic):
 def SpringerParser(ceiling, data):
     for i in range(ceiling):
         i %= 100
-        if (
-            data["records"][i]["abstract"] == ""
-            or data["records"][i]["abstract"] == None
-        ):
-            continue
-        else:
-            doi = data["records"][i]["identifier"].replace("doi:", "")
-            if DuplicateCheck(doi) == False:
-                doiWriter(doi)
-                abstract = data["records"][i]["abstract"] + "\n"
-                fileWriter(abstract)
+        try:
+            if (
+                data["records"][i]["abstract"] == ""
+                or data["records"][i]["abstract"] == None
+            ):
+                continue
+            else:
+                doi = data["records"][i]["identifier"].replace("doi:", "")
+                if DuplicateCheck(doi) == False:
+                    abstract = data["records"][i]["abstract"] + "\n"
+                    fileWriter(abstract)
+        except:
+            pass
 
 
 def RESTAPIExtraction(numOfJournals, searchTopic):
@@ -209,11 +213,10 @@ def RESTAPIExtraction(numOfJournals, searchTopic):
 
 
 def RESTAPIparser(ceiling, data):
-    for i in range(ceiling):
-        doi = str(data["message"]["items"][i]["DOI"])
+    for item in data["message"]["items"]:
+        doi = item["DOI"]
         if DuplicateCheck(doi) == False:
-            doiWriter(doi)
-            abstract = data["message"]["items"][i]["abstract"]
+            abstract = item["abstract"]
             abstract = re.sub("<\S+>", "", abstract)
             abstract = re.sub("[a-z]*&\S*;", "", abstract)
             abstract = re.sub("\s{2,}", "", abstract)
@@ -225,22 +228,23 @@ def fileWriter(abstract):
     with open("AbstractRetrieval\Abstracts.txt", "a", encoding="utf-8") as fn:
         fn.write(abstract)
 
-def doiWriter(doi):
-    with open("AbstractRetrieval\log.txt", "a", encoding="utf-8") as fn:
-        fn.write(doi + "\n")
-        fn.close()
-    DOIs.append(doi)
+
+def doiWriter():
+    with open("AbstractRetrieval\log.txt", "w", encoding="utf-8") as fn:
+        for i in DOIs:
+            fn.write(i + "\n")
 
 
 def DuplicateCheck(doi):
     if doi in DOIs:
         return True
     else:
+        DOIs.append(doi)
         return False
 
 
 root = tk.Tk()
-root.geometry("0x0+1000+400")
+root.geometry("10x10+1000+400")
 root.update_idletasks()
 __main__()
 root.mainloop()
