@@ -9,16 +9,10 @@ import subprocess
 import time
 
 # August Moses VCU 2023
-abstracts = open("AbstractRetrieval\Abstracts.txt", "w", encoding="utf-8")
-# log = open("AbstractRetrieval\log.txt", "w")
-
 
 def __main__():
     global DOIs
     DOIs = []
-    # # for example sake, abstracts.txt is cleared every time the code runs
-    # while True:
-    #     try:
     searchTopic = simpledialog.askstring(
         title="Abstract Retrieval",
         prompt="Current # of abstracts: "
@@ -45,13 +39,12 @@ def __main__():
     except (IndexError, KeyError) as error:
         pass
 
+    AbsDblCheck()
     doiWriter()
-    print(len(DOIs))
+    print(len(abstracts))
     print("Done.")
     abstracts.close()
-
-    # except TypeError as error:
-    #     exit()
+    quit()
 
 
 def SpringerJSON(offset, ceiling, searchTopic):
@@ -226,7 +219,7 @@ def RESTAPIparser(ceiling, data):
 
 
 def fileWriter(abstract):
-    with open("AbstractRetrieval\Abstracts.txt", "a", encoding="utf-8") as fn:
+    with open("AbstractRetrieval\Data.txt", "a", encoding="utf-8") as fn:
         fn.write(abstract)
 
 
@@ -243,6 +236,13 @@ def DuplicateCheck(doi):
         DOIs.append(doi)
         return False
 
+def AbsDblCheck():
+    data = [line.strip() for line in open("./Data.txt", 'r')]
+    abstracts = list(set(data))
+
+    with open("Abstracts.txt", "w", encoding="utf-8") as fn:
+            for value in abstracts:
+                fn.write(value + "\n")
 
 root = tk.Tk()
 root.geometry("10x10+1000+400")
