@@ -221,6 +221,7 @@ def RESTAPIparser(ceiling, data):
             abstract = re.sub("[a-z]*&\S*;", "", abstract)
             abstract = re.sub("\s{2,}", "", abstract)
             abstract = re.sub("\n", " ", abstract)
+            abstract += "\n"
             fileWriter(abstract)
 
 
